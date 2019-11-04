@@ -36,7 +36,12 @@ Start server:
 ```
 python main
 ```
-Don't forget to add your telegram bot token and last.fm API token
+Don't forget to add your tokens:
+```
+os.environ['TOKEN'] = TELEGRAM_BOT_TOKEN  
+os.environ['LAST_FM_API_TOKEN'] = LAST_FM_API_TOKEN
+```
+
 And that is it!
 
 ## TDB
