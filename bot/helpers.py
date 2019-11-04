@@ -6,8 +6,6 @@ import youtube_dl
 import requests
 from pydub import AudioSegment
 
-from bot.token import LAST_FM_API_TOKEN
-
 
 def download_audio_or_playlist(audio_dir: str, url: str):
     """
@@ -57,7 +55,7 @@ def recommend_song(artist: str, track: str):
     :param track: handled track
     :return: list contains 3 most popular similar songs
     """
-    api_token = LAST_FM_API_TOKEN
+    api_token = os.environ.get('LAST_FM_API_TOKEN')
     base_url = 'http://ws.audioscrobbler.com/2.0/'
     url = "{}?method=track.getsimilar&artist={}&track={}&api_key={}&format=json".format(base_url,
                                                                                         artist,

@@ -3,7 +3,6 @@
 import logging
 import os
 import re
-import time
 
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
