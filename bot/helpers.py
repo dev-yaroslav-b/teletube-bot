@@ -45,7 +45,7 @@ def clean(audio_dir: str):
     """
     for filename in os.listdir(audio_dir):
         os.remove(os.path.join(audio_dir, filename))
-    return "{} successfully cleaned".format(audio_dir)
+    return f"{audio_dir} successfully cleaned"
 
 
 def recommend_song(artist: str, track: str):
@@ -56,17 +56,15 @@ def recommend_song(artist: str, track: str):
     :return: list contains 3 most popular similar songs
     """
     api_token = os.environ.get('LAST_FM_API_TOKEN')
-    base_url = 'http://ws.audioscrobbler.com/2.0/'
-    url = "{}?method=track.getsimilar&artist={}&track={}&api_key={}&format=json".format(base_url,
-                                                                                        artist,
-                                                                                        track,
-                                                                                        api_token)
-    response = requests.request("GET", url)
+    url = f"http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist={artist}&track={track}&api_key={api_token}&format=json"
+
+    response = requests.get(url)
     data = json.loads(response.text)
     most_common = []
     if data.get('error') is None:
         for d in data['similartracks']['track']:
-            most_common.append([d['artist']['name'], d['name'], d['url'], d['playcount']])
+            most_common.append(
+                [d['artist']['name'], d['name'], d['url'], d['playcount']])
 
         return sorted(most_common, key=lambda x: x[-1])[-3:]
     else:
@@ -105,7 +103,9 @@ def handle_time_codes(time_codes: str):
     time_codes_millis = []
     for time_code in time_codes:
         milliseconds = 0
-        m = hours_minutes_seconds_to_milliseconds(milliseconds, [int(_) for _ in time_code.split(':')])
+        m = hours_minutes_seconds_to_milliseconds(milliseconds,
+                                                  [int(_) for _ in
+                                                   time_code.split(':')])
         time_codes_millis.append(m)
     time_codes_millis.insert(0, 0)
     return time_codes_millis
@@ -123,7 +123,8 @@ def split_file(time_codes: list, audio_dir: str):
         sound = AudioSegment.from_file(os.path.join(audio_dir, filename))
         for i in range(len(time_codes) - 1):
             part = sound[time_codes[i]:time_codes[i + 1]]
-            filename_parts[i] = 'Part{} - {}'.format(i, filename)
-            part.export(os.path.join(audio_dir, filename_parts[i]), format='mp3')
+            filename_parts[i] = f'Part{i} - {filename}'
+            part.export(os.path.join(audio_dir, filename_parts[i]),
+                        format='mp3')
         os.remove(os.path.join(audio_dir, filename))
     return filename_parts
