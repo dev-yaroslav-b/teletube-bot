@@ -6,23 +6,38 @@ import re
 
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
-from bot.helpers import download_audio_or_playlist, clean, recommend_song, handle_time_codes, split_file
+from .helpers import download_audio_or_playlist, clean, recommend_song, \
+    handle_time_codes, split_file
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
 # Setup logging
 bot_log_filename = 'bot_logs.log'
-logging.basicConfig(filename='bot/logs/{}'.format(bot_log_filename),
+bot_log_dir = 'logs'
+try:
+    os.mkdir(bot_log_dir)
+except OSError:
+    print("Directory %s already exists" % bot_log_dir)
+
+logging.basicConfig(filename=f'{bot_log_dir}/{bot_log_filename}',
                     filemode='a',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                     datefmt='%H:%M:%S',
                     level=logging.INFO)
 
 
+# error handler
+def error(update: Update, context: CallbackContext):
+    """Log Errors caused by Updates."""
+    logging.warning("Update '%s' caused error '%s'", update, context.error)
+
+
+# /start command handler
 def start(update: Update, context: CallbackContext):
     update.message.reply_text("""Hi! Let me show my commands - /help""")
 
 
+# /help command handler
 def help(update: Update, context: CallbackContext):
     update.message.reply_text("""My commands:
     /send `your-youtube-url` - and I will send you audio file or even playlist;
@@ -32,45 +47,51 @@ def help(update: Update, context: CallbackContext):
     """)
 
 
-def error(update: Update, context: CallbackContext):
-    """Log Errors caused by Updates."""
-    logging.warning('Update "%s" caused error "%s"', update, context.error)
-
-
+# /send command handler
 def send(update: Update, context: CallbackContext):
     data = {
         'url': re.sub('/\w+\s', '', update.message['text']),
         'chat_id': str(update.message.chat_id)
     }
-    logging.info("Chat id: {} | Downloading {}".format(data['chat_id'], data['url']))
-    audio_dir = base_dir + '/audio/' + data['chat_id']
+
+    logging.info(f"Chat id: {data['chat_id']} | Downloading {data['url']}")
+    audio_dir = f"{base_dir}/audio/{data['chat_id']}"
 
     try:
         download_audio_or_playlist(audio_dir, data['url'])
         logging.info("Downloaded successfully")
 
+        # iterate through files in audio_dir
         for filename in os.listdir(audio_dir):
-            context.bot.send_audio(chat_id=data['chat_id'], audio=open(os.path.join(audio_dir, filename), 'rb'),
+            context.bot.send_audio(chat_id=data['chat_id'],
+                                   audio=open(
+                                       os.path.join(audio_dir, filename),
+                                       'rb'),
                                    timeout=1000)
-            logging.info("Sent {} successfully".format(filename))
+            logging.info(f"Sent {filename} successfully")
 
-        logging.info("Deleting {}".format(audio_dir))
+        logging.info(f"Removing files from {audio_dir}")
         logging.info(clean(audio_dir))
 
-        context.bot.delete_message(chat_id=update.message.chat_id, message_id=update.message.message_id)
+        context.bot.delete_message(chat_id=update.message.chat_id,
+                                   message_id=update.message.message_id)
     except:
         logging.error("Exception occurred", exc_info=True)
-        update.message.reply_text("Unknown error occurred! Please, try again later")
+        update.message.reply_text(
+            "Unknown error occurred! Please, try again later")
 
 
+# /podcast command handler
 def podcast(update: Update, context: CallbackContext):
     data = {
         'url': re.sub('/\w+\s', '', update.message['text']),
         'time_codes': update.message['text'].split(' ')[2:],
         'chat_id': str(update.message.chat_id)
     }
-    logging.info("Chat id: {} | Downloading {}".format(data['chat_id'], data['url']))
-    audio_dir = base_dir + '/audio/' + data['chat_id']
+
+    logging.info(f"Chat id: {data['chat_id']} | Downloading {data['url']}")
+    audio_dir = f"{base_dir}/audio/{data['chat_id']}"
+
     try:
         data['time_codes'] = handle_time_codes(' '.join(data['time_codes']))
         logging.info("Processed time codes successfully")
@@ -82,37 +103,45 @@ def podcast(update: Update, context: CallbackContext):
         logging.info("Split files successfully")
 
         for k, filename in filename_parts.items():
-            context.bot.send_audio(chat_id=data['chat_id'], audio=open(os.path.join(audio_dir, filename), 'rb'),
+            context.bot.send_audio(chat_id=data['chat_id'],
+                                   audio=open(
+                                       os.path.join(audio_dir, filename),
+                                       'rb'),
                                    timeout=1000)
-            logging.info("Sent {} successfully".format(filename))
+            logging.info(f"Sent {filename} successfully")
 
-        logging.info("Deleting {}".format(audio_dir))
+        logging.info(f"Removing files from {audio_dir}")
         logging.info(clean(audio_dir))
 
-        context.bot.delete_message(chat_id=update.message.chat_id, message_id=update.message.message_id)
+        context.bot.delete_message(chat_id=update.message.chat_id,
+                                   message_id=update.message.message_id)
     except:
         logging.error("Exception occurred", exc_info=True)
-        update.message.reply_text("Unknown error occurred! Please, try again later")
+        update.message.reply_text(
+            "Unknown error occurred! Please, try again later")
 
 
+# /recommend command handler
 def recommend(update: Update, context: CallbackContext):
     data = {
         'info': re.sub('/\w+\s', '', update.message['text']),
         'chat_id': str(update.message.chat_id)
     }
-    logging.info("Chat id: {} | Recommend request: {}".format(data['chat_id'], data['info']))
+
+    logging.info(
+        f"Chat id: {data['chat_id']} | Recommend request: {data['info']}")
 
     artist, song = data['info'].split('-')
-    logging.info("Searching for {} - {}".format(artist, song))
+    logging.info(f"Searching for {artist} - {song}")
 
     recommendation = recommend_song(artist, song)
-    logging.info("Searching result: {}".format(recommendation))
+    logging.info(f"Searching result: {recommendation}")
 
     if recommendation is None:
         update.message.reply_text("Can't find any similar songs :(")
     else:
         for s in recommendation:
-            update.message.reply_text('{}: {}\n{}'.format(s[0], s[1], s[2]))
+            update.message.reply_text(f"{s[0]}: {s[1]}\n{s[2]}")
 
 
 def main():
@@ -121,7 +150,7 @@ def main():
 
     logging.info('I am alive')
 
-    # Bot commands
+    # Add bot command handlers
     updater.dispatcher.add_handler(CommandHandler('start', start))
     updater.dispatcher.add_handler(CommandHandler('help', help))
     updater.dispatcher.add_handler(CommandHandler('send', send))
