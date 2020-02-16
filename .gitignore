@@ -56,4 +56,4 @@ venv.bak/
 .DS_Store/
 
 *.log
-token.py
+.env
