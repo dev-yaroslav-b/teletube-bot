@@ -1,0 +1,10 @@
+version: '3.7'
+
+services:
+  teletube_bot:
+    build: .
+    volumes:
+      - ./logs:/teletube_bot/logs/
+    env_file:
+      - ./.env
+    restart: always
