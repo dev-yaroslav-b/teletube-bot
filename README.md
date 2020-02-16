@@ -21,29 +21,38 @@ cd teletube-bot
 virtualenv --python=python3.7 venv
 ```
 Activate venv:
+Unix:
 ```
 source venv/bin/activate
+```
+Windows:
+```
+venv\Scripts\activate
 ```
 Install requirements:
 ```
 pip install -r requirements.txt 
 ```
-Create required dirs:
+Install ffmpeg for Mac `brew install ffmpeg` or [Windows](http://blog.gregzaal.com/how-to-install-ffmpeg-on-windows/)
+
+Don't forget to add your tokens:
 ```
-mkdir bot/audio bot/logs
+export TOKEN=TELEGRAM_BOT_TOKEN  
+exportLAST_FM_API_TOKEN=LAST_FM_API_TOKEN
 ```
-Start server:
+Start bot:
 ```
 python main
 ```
-Don't forget to add your tokens:
+
+Or run it using `docker-compose`:
+
+Create `.env` file and fill it according to the `.env.template`
+
+And run: 
+
 ```
-os.environ['TOKEN'] = TELEGRAM_BOT_TOKEN  
-os.environ['LAST_FM_API_TOKEN'] = LAST_FM_API_TOKEN
+docker-compose up
 ```
 
 And that is it!
-
-## TDB
-1. Add tests
-2. Add webhook version
